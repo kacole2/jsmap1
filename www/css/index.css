@@ -33,9 +33,15 @@ html, body {
     padding-bottom: 1%;
 }
 
+#map-page { 
+    width: 100%; 
+    height: 100%; 
+    padding: 0; 
+}
+
 #map {
     width: 100%;
-    height: 46%;
+    height: 45%;
     z-index: 10;
     position: fixed;
 }

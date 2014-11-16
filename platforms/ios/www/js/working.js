@@ -65,80 +65,129 @@ var app = {
           });
 
        //PlacesAPI
-
-       var liquorSearchParams = {
+        var liquorSearchParams = {
             location: latLong,
             rankBy: google.maps.places.RankBy.DISTANCE,
-            types: ['liquor_store']
+            types: ['liquor_store'],
         };
 
-        var service = new google.maps.places.PlacesService(map);
-            service.nearbySearch(liquorSearchParams, callback);
+        var allPlaces = [];
 
-        var allStores = [];
+        var service = new google.maps.places.PlacesService(map);
+            service.nearbySearch(liquorSearchParams, callback); 
 
         function callback(results, status) {
-          if (status == google.maps.places.PlacesServiceStatus.OK) {
-            for (var i = 0; i < results.length; i++) {
-              //createMarker(results[i]);
-              addPlaceToArray(results[i]);
-            }
+            //console.log("******* results: %j", results);
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            async.each(results, addPlaceToArray, function(err) {
+                // this gets executed when all places have been added to allPlaces
+                
+                placeHtmlOutput();
+            });
           }
         }
 
-        function addPlaceToArray(place) {
+        function addPlaceToArray(place, done) {
             var placeIdRequest = {
               placeId: place.place_id
             };
+ 
+            var placeDetailCallback = function(placeDetail, status) {
+                if (status == "OK") {
+                    var destinationPoint = new google.maps.LatLng(placeDetail.geometry.location.k, placeDetail.geometry.location.B);
+                    var theDistance = google.maps.geometry.spherical.computeDistanceBetween(destinationPoint, latLong);
+
+                    allPlaces.push({id: placeDetail.id, placeid: placeDetail.place_id, name: placeDetail.name, geometry: placeDetail.geometry.location,  
+                        latitude: placeDetail.geometry.location.k, longitude: placeDetail.geometry.location.B, 
+                        address: placeDetail.vicinity, phone: placeDetail.formatted_phone_number, website: placeDetail.website, 
+                        hours: placeDetail.opening_hours, user_ratings_total: placeDetail.user_ratings_total, rating: placeDetail.rating,
+                        google_url: placeDetail.url, price_level: placeDetail.price_level, distance: theDistance});
+                } else {
+                    console.log("Got error when getting place details for place %s:", place.id, status);
+                }
+                done(); //if an error occurred here, you can pass it to done
+            };
+ 
             service.getDetails(placeIdRequest, placeDetailCallback);
         };
 
-        function placeDetailCallback(placeDetail, status) {
-            if (status == google.maps.places.PlacesServiceStatus.OK) {
-                var destinationPoint = new google.maps.LatLng(placeDetail.geometry.location.k, placeDetail.geometry.location.B);
-                var theDistance = google.maps.geometry.spherical.computeDistanceBetween(destinationPoint, latLong);
+        function placeHtmlOutput() {
+            function compare(a,b) {
+              if (a.distance < b.distance)
+                 return -1;
+              if (a.distance > b.distance)
+                return 1;
+              return 0;
+            }
+ 
+            allPlaces.sort(compare);
+            console.log(allPlaces);
 
-                allStores.push(placeDetail);
-                console.log(allStores);
+            for (var i = 0; i < allPlaces.length; i++) {
 
-                var html = '<dt><a href="#">' + placeDetail.name + '</span><span class="storeDistance">' + (theDistance * 0.000621371192).toFixed(2) + 'mi </span></a></dt>';
-                    html += '<dd><div class="leftSide">'
-                    html += '<span style="float: left;"><a href="tel:' + placeDetail.formatted_phone_number + '">' + placeDetail.formatted_phone_number + '</a></span>';
+                var placeDetail = allPlaces[i];
+                var html = '<dt>';
+                    html += '<a href="#">' + allPlaces[i].name + '<span class="storeDistance">' + (allPlaces[i].distance * 0.000621371192).toFixed(2) + 'mi </span></a>';
+                    html += '</dt>';
+                    html += '<dd>';
+                    html += '<div class="leftSide">';
+                    html += '<a href="tel:' + allPlaces[i].phone + '">' + allPlaces[i].phone + '</a>';
                     
-                    if (typeof placeDetail.opening_hours === 'undefined'){  
-                        html += '';
+                    if (typeof allPlaces[i].hours === 'undefined'){
+                        //do nothing
                     } else {
-                        if (placeDetail.opening_hours.open_now == true){
-                        html += '<span style="float: right;"><strong>Open Now</strong></span>';
+                        html += '<span style="float: right;">';
+                        if (allPlaces[i].hours.open_now == true){
+                        html += '<strong>Open Now</strong>';
                         } else {
-                            html += '<span style="float: right;>Closed</span>';
+                            html += 'Closed';
                         }
+                        html += '</span>';
                     }
-
+                    
                     html += '<br>';
-                    html += placeDetail.vicinity;
-                    html += '<br>';
-
-                    if (typeof placeDetail.website === 'undefined'){
-                        html += '';
+                    html += allPlaces[i].address;
+ 
+                    if (typeof allPlaces[i].website === 'undefined'){
+                        //do nothing html += '';
                     } else {
-                        html += '<a href="' + placeDetail.website + '">' + placeDetail.website + '</a>';
+                        html += '<br><a href="' + allPlaces[i].website + '">' + allPlaces[i].website.replace('http://www.', '').replace('http://', '').replace('/', '') + '</a>';
                     }
 
-                    html += '</div>';
+                    html += '<br>';
+                    html += '<br>';
+                    if (typeof allPlaces[i].rating === 'undefined'){
+                        // do nothing html += '';
+                    } else {
+                        html += '<strong>Rating: ' + allPlaces[i].rating + '</strong>';
+                    }
 
-                    if(device.platform == "Android"){
-                        html += '<div class="rightSide"><a href="geo:' + placeDetail.geometry.location.k + ',' + placeDetail.geometry.location.B + '"><img src="img/takemethere.png" class="takeMeThere"></a></div>';
-                    }else if(device.platform == "iOS"){
-                        html += '<div class="rightSide"><a href="comgooglemaps://?q=' + placeDetail.name + '"><img src="img/takemethere.png" class="takeMeThere"></a></div>';
+                    if (typeof allPlaces[i].user_ratings_total === 'undefined'){
+                        //do nothing html += '';
+                    } else {
+                        html += '<span style="float: right;"><a href="' + allPlaces[i].google_url + '">' + allPlaces[i].user_ratings_total;
+                        if (allPlaces[i].user_ratings_total > 1){
+                            html += ' Reviews';
+                        } else {
+                            html += ' Review';
+                        }
+                        html += '</a></span>';
+                    }
+ 
+                    html += '</div>';
+                    html += '<div class="rightSide">';
+
+                    if(device && device.platform == "Android"){
+                        html += '<a href="geo:' + allPlaces[i].latitude + ',' + allPlaces[i].longitude + '">';
+                    }else if(device && device.platform == "iOS"){
+                        html += '<a href="comgooglemaps://?q=' + allPlaces[i].name + '">';
                     }else{
                         console.error("Unknown platform");
                     }
+                    html += '<img src="img/takemethere.png" class="takeMeThere"></a></div></dd>';
 
-                    html += '</dd>';
-                    
                 $("#storeList").append(html);
-                createMarker(placeDetail);
+                createMarker(allPlaces[i]);
             }
         };
 
@@ -159,16 +208,19 @@ var app = {
         var allMarkers = [];
 
         function createMarker(place) {
-
-            var marker = new google.maps.Marker({
-                name: place.name,
-                map: map,
-                position: place.geometry.location,
-                icon: defaultStorePin
-            });
-
-            allMarkers.push(marker);
-            markerEventHandler(place, marker);
+            if (!place.geometry) {
+                console.log("**** Place doesn't have geometry:", place);
+            } else {                
+                var marker = new google.maps.Marker({
+                    name: place.name,
+                    map: map,
+                    position: place.geometry,
+                    icon: defaultStorePin
+                });
+ 
+                allMarkers.push(marker);
+                markerEventHandler(place, marker);
+            }
         };
 
         function markerEventHandler(place, marker){
@@ -217,8 +269,10 @@ var app = {
                     allMarkers[i].setIcon(defaultStorePin);
                 }
                 var storeName = $(this).html().toString().split('<')[0];
-                var arrayLocation = $.grep(allMarkers, function(e){ return e.name == storeName; })
+                storeName = storeName.replace("&amp;", "&");
+                var arrayLocation = $.grep(allMarkers, function(e){ return e.name == storeName; });
                 arrayLocation[0].setIcon(highlightedStorePin);
+                map.panTo(arrayLocation[0].position);
 
               var toExpand = $(this).parent().next('dd');
               var i = toExpand.index('dd');
@@ -254,7 +308,7 @@ var app = {
 
         setTimeout(function(){
             $('#storeList').accordion();
-        },2400);
+        },2499);
 
         $( "#storeListLoading" ).delay( 2500 ).slideUp(200).hide;
         //repeat every 5 seconds
