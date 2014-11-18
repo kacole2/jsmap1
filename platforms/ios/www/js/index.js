@@ -248,7 +248,7 @@ var app = {
             });
         }
 
-        //$( "#storeListLoading" ).delay( 2500 ).slideUp(200).hide;
+        $( "#storeListLoading" ).delay( 2500 ).slideUp(200).hide;
         //repeat every 5 seconds
         //setTimeout(app.onSuccess, 5000);
     },
