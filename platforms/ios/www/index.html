@@ -28,7 +28,7 @@
         <meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height, target-densitydpi=device-dpi" />
         <link rel="stylesheet" type="text/css" href="css/index.css" />
         <link href='http://fonts.googleapis.com/css?family=Lobster|Quattrocento+Sans:400,700' rel='stylesheet' type='text/css'>
-        <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.3/jquery.mobile.min.css" />
+        <link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/jquerymobile/1.4.3/jquery.mobile.min.css" />
         <title>Bourbon Hunter</title>
     </head>
     <body>
@@ -36,13 +36,11 @@
             <div data-role="header" data-theme="a">
                 <div id="top-header"><h1>Bourbon Hunter <img src="img/drink2.png" align="top" style="width: 30px;"></h1></div>
             </div>
-
-            <div role="main" class="ui-content" id="map">
-                <!-- map loads here... -->
+            <div data-role="content">
+                <div role="main" id="map"></div>
+                <!-- <div id="storeListLoading"><img src="img/loader.gif"></div> -->
+                <div id="storeList" data-role="collapsible-set"></div>
             </div>
-            
-            <div id="storeListLoading"><img src="img/loader.gif"></div>
-            <dl id="storeList"></dl>
         </div>
     </body>
         <script type="text/javascript" src="cordova.js"></script>

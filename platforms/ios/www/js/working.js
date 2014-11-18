@@ -35,7 +35,7 @@ var app = {
     // function, we must explicitly call 'app.receivedEvent(...);'
     onDeviceReady: function() {
        // app.receivedEvent('deviceready');
-       navigator.geolocation.getCurrentPosition(app.onSuccess, app.onError);
+            navigator.geolocation.getCurrentPosition(app.onSuccess, app.onError);
     },
 
     onSuccess: function(position){
@@ -321,4 +321,6 @@ var app = {
 
 };
 
-app.initialize();
+$( document ).on( "pageshow", "#map-page", function() {
+    app.initialize();
+});
